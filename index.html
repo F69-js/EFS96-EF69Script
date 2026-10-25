@@ -1,0 +1,908 @@
+# EFurokuScript JS方式@domオブジェクトシステム搭載プレイグラウンド
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EFurokuScript Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; }
+        .code-font { font-family: 'Consolas', 'Monaco', monospace; }
+        
+        /* エディタ重ね合わせスタイル */
+        .editor-container { position: relative; width: 100%; height: 100%; min-h-[300px]; }
+        .editor-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            margin: 0; padding: 1rem; box-sizing: border-box;
+            border: 1px solid #374151; border-radius: 0.375rem;
+            font-size: 0.9rem; line-height: 1.6rem; overflow: auto;
+            white-space: pre-wrap; word-wrap: break-word;
+
+            letter-spacing: 0.025em;
+        }
+        #editor-textarea {
+            color: transparent; background: transparent; caret-color: #e5e7eb;
+            resize: none; z-index: 10;
+        }
+        #editor-highlight { background: #111827; z-index: 5; pointer-events: none; }
+        
+        /* ユーザー指定に基づく美しいカスタム配色テーマ */
+        .hl-comment { color: #6a9955; font-style: italic; }     /* セミコロンコメント: 優しい緑 */
+        .hl-keyword { color: #4ba3e3; font-weight: bold; }     /* var, fn, while等: パステルブルー */
+        .hl-system { color: #ee6666; font-weight: bold; }      /* @dom, @out等: 朱赤 */
+        .hl-literal { color: #a7f3d0; }                        /* true, false, 数値, 文字列: 淡いミント */
+        .hl-builtin { color: #c0a9df; }                        /* readvar等: スモーキーパープル */
+        .hl-operator { color: #ffffff; font-weight: bold; }    /* 演算子・記号: 白 */
+        .hl-braces { color: #d4d4d8; }                         /* カッコ類・カンマ: 薄灰 */
+        .hl-ident { color: #e5e7eb; }                          /* 通常の識別子: オフホワイト */
+        .hl-defined-var { color: #fef08a; font-weight: 500; }  /* 定義済み変数名: クリーム色 */
+
+
+        /* 波括弧のネスト階層別レインボーカラー */
+        .brace-depth-0 { color: #f472b6; font-weight: bold; }  /* 1層目: パステルピンク */
+        .brace-depth-1 { color: #fbbf24; font-weight: bold; }  /* 2層目: パステルイエロー */
+        .brace-depth-2 { color: #22d3ee; font-weight: bold; }  /* 3層目: パステルシアン */
+        .brace-depth-3 { color: #c084fc; font-weight: bold; }  /* 4層目: パステルパープル */
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <span class="text-xl font-bold text-gray-200">⚡ EFurokuScript</span>
+            <span class="bg-gray-700 text-gray-400 text-xs px-2 py-1 rounded font-mono">JS-style @dom Object Spec (.efs69)</span>
+        </div>
+        <div class="flex space-x-2">
+            <button id="btn-run" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded shadow transition">▶ RUN</button>
+            <button id="btn-clear" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded transition">Clear</button>
+        </div>
+
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <!-- Editor Left Pane -->
+        <section class="flex-1 flex flex-col border-r border-gray-700 p-4 min-h-[350px] md:min-h-0">
+            <label class="text-sm font-semibold text-gray-400 mb-2">Source Code Editor (EFurokuScript)</label>
+            <div class="flex-1 editor-container">
+                <div id="editor-highlight" class="editor-layer code-font"></div>
+                <textarea id="editor-textarea" class="editor-layer code-font focus:outline-none focus:border-gray-600" spellcheck="false">; === EFurokuScript: An interpreted language that supports diverse coding styles ===
+@readvar_mode false
+
+; --- 1. Generate an HTML element using JavaScript-style @dom object method ---
+var myBtn = @dom.create("button").
+
+; --- 2. Direct property assignment to update the DOM node ---
+myBtn.text = "JS-Style Dynamic Button!".
+
+; Apply styles by feeding layout array literals directly to properties
+
+myBtn.style = _"padding", "12px 24px"_.
+myBtn.style = _"background-color", "#ee6666"_.
+myBtn.style = _"color", "#ffffff"_.
+myBtn.style = _"border-radius", "30px"_.
+myBtn.style = _"font-weight", "bold"_.
+myBtn.style = _"border", "none"_.
+myBtn.style = _"cursor", "pointer"_.
+
+; --- 3. Mount the element via object member execution ---
+@dom.append("app-root", myBtn).
+
+@out = "JS-style DOM Object Engine ready!".
+</textarea>
+            </div>
+        </section>
+
+        <!-- Console & Preview Right Pane -->
+        <section class="w-full md:w-96 bg-gray-900 p-4 flex flex-col space-y-4 overflow-y-auto">
+            <!-- Dynamic DOM App Mount Area -->
+
+            <div class="flex flex-col h-48 bg-gray-950 p-4 rounded border border-gray-800 shadow-inner">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">🖥️ Live App Screen (#app-root)</h3>
+                <div id="app-root" class="flex-1 flex items-center justify-center bg-gray-900 rounded border border-gray-800 p-2 overflow-auto"></div>
+            </div>
+
+            <!-- Console Output -->
+            <div class="flex flex-col flex-1 min-h-[150px]">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">Console Output (@out)</h3>
+                <div id="console-output" class="flex-1 bg-black p-3 rounded border border-gray-800 code-font text-sm text-white overflow-y-auto whitespace-pre-wrap shadow-inner"></div>
+            </div>
+
+            <!-- Engine Data Monitor -->
+            <div class="bg-gray-950 p-4 rounded border border-gray-800 space-y-3">
+                <h3 class="text-sm font-bold text-gray-400 border-b border-gray-800 pb-2">🔍 Engine Status</h3>
+                <div>
+                    <span class="text-xs text-gray-500 block">@readvar_mode:</span>
+                    <span id="status-mode" class="text-sm font-mono font-bold text-gray-300">true</span>
+                </div>
+                <div>
+
+                    <span class="text-xs text-gray-500 block mb-1">Variables:</span>
+                    <div id="status-vars" class="text-xs font-mono max-h-32 overflow-y-auto space-y-1 bg-gray-900 p-2 rounded border border-gray-800"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Interpreter Core Pipeline Script -->
+    <script>
+        class ReturnOneSignal { constructor(value) { this.value = value; } }
+        class ReturnZeroSignal { constructor(value) { this.value = value; } }
+        class ReturnDescSignal { constructor(value) { this.value = value; } }
+
+        // --- 1. Tokenizer ---
+        function tokenize(source) {
+            const tokens = [];
+            let i = 0, lineNum = 1;
+            while (i < source.length) {
+                let ch = source[i];
+
+                if (ch === '\n') { tokens.push({ type: 'NEWLINE', value: '\n', line: lineNum }); lineNum++; i++; continue; }
+                if (/\s/.test(ch) && ch !== '\r') { i++; continue; }
+                if (ch === '\r') { i++; continue; }
+                if (ch === ';') { while (i < source.length && source[i] !== '\n') i++; continue; }
+                if (ch === ':') { tokens.push({ type: 'COLON', value: ':', line: lineNum }); i++; continue; }
+                if (ch === '[') { tokens.push({ type: 'LBRACKET', value: '[', line: lineNum }); i++; continue; }
+                if (ch === ']') { tokens.push({ type: 'RBRACKET', value: ']', line: lineNum }); i++; continue; }
+                if (ch === '_') { tokens.push({ type: 'UNDER_ARR', value: '_', line: lineNum }); i++; continue; }
+                if (ch === '{') { tokens.push({ type: 'LBRACE', value: '{', line: lineNum }); i++; continue; }
+                if (ch === '}') { tokens.push({ type: 'RBRACE', value: '}', line: lineNum }); i++; continue; }
+                if (ch === '.') { tokens.push({ type: 'DOT', value: '.', line: lineNum }); i++; continue; }
+
+                if (ch === '=') {
+                    if (source.substring(i, i + 3) === '===') { tokens.push({ type: 'COMP', value: '===', line: lineNum }); i += 3; }
+                    else if (source.substring(i, i + 2) === '==') { tokens.push({ type: 'COMP', value: '==', line: lineNum }); i += 2; }
+                    else { tokens.push({ type: 'ASSIGN', value: '=', line: lineNum }); i++; }
+                    continue;
+                }
+                if (ch === '<') {
+
+                    if (source[i + 1] === '=') { tokens.push({ type: 'COMP', value: '<=', line: lineNum }); i += 2; }
+                    else { tokens.push({ type: 'COMP', value: '<', line: lineNum }); i++; }
+                    continue;
+                }
+                if (ch === '>') {
+                    if (source[i + 1] === '=') { tokens.push({ type: 'COMP', value: '>=', line: lineNum }); i += 2; }
+                    else { tokens.push({ type: 'COMP', value: '>', line: lineNum }); i++; }
+                    continue;
+                }
+                if (ch === '$' && source[i + 1] === '=') { tokens.push({ type: 'COMP', value: '$=', line: lineNum }); i += 2; continue; }
+                if (ch === '!') {
+                    if (source.substring(i, i + 3) === '!==') { tokens.push({ type: 'COMP', value: '!==', line: lineNum }); i += 3; }
+                    else if (source.substring(i, i + 2) === '!=') { tokens.push({ type: 'COMP', value: '!=', line: lineNum }); i += 2; }
+                    else { tokens.push({ type: 'NOT', value: '!', line: lineNum }); i++; }
+                    continue;
+                }
+                if (ch === '+') { tokens.push({ type: 'PLUS', value: '+', line: lineNum }); i++; continue; }
+                if (ch === '-') { tokens.push({ type: 'MINUS', value: '-', line: lineNum }); i++; continue; }
+                if (ch === '(') { tokens.push({ type: 'LPAREN', value: '(', line: lineNum }); i++; continue; }
+
+                if (ch === ')') { tokens.push({ type: 'RPAREN', value: ')', line: lineNum }); i++; continue; }
+                if (ch === ',') { tokens.push({ type: 'COMMA', value: ',', line: lineNum }); i++; continue; }
+
+                if (ch === '"' || ch === "'") {
+                    let quote = ch, start = i; i++;
+                    while (i < source.length && source[i] !== quote) i++;
+                    i++;
+                    tokens.push({ type: 'STRING', value: source.substring(start + 1, i - 1), line: lineNum });
+                    continue;
+                }
+                if (ch === '@') {
+                    let start = i; i++;
+                    while (i < source.length && /[a-zA-Z0-9_.]/.test(source[i])) i++;
+                    let val = source.substring(start, i);
+                    if (val === '@returns') tokens.push({ type: 'RETURN_KEYWORD', mode: 'one', value: val, line: lineNum });
+                    else if (val === '@returnsdesc') tokens.push({ type: 'RETURN_KEYWORD', mode: 'desc', value: val, line: lineNum });
+                    else if (val === '@returnszero') tokens.push({ type: 'RETURN_KEYWORD', mode: 'zero', value: val, line: lineNum });
+                    else if (val === '@returnsvar') tokens.push({ type: 'RETURN_KEYWORD', mode: 'var', value: val, line: lineNum });
+                    else tokens.push({ type: 'SYSTEM', value: val, line: lineNum });
+
+                    continue;
+                }
+                if (/[a-zA-Z]/.test(ch)) {
+                    let start = i; i++;
+                    while (i < source.length && /[a-zA-Z0-9_.]/.test(source[i])) i++;
+                    let val = source.substring(start, i);
+                    if (val === 'var') tokens.push({ type: 'VAR', value: val, line: lineNum });
+                    else if (val === 'const') tokens.push({ type: 'CONST', value: val, line: lineNum });
+                    else if (val === 'readvar') tokens.push({ type: 'READVAR', value: val, line: lineNum });
+                    else if (val === 'true' || val === 'false') tokens.push({ type: 'BOOLEAN', value: val, line: lineNum });
+                    else if (val === 'if') tokens.push({ type: 'IF', value: val, line: lineNum });
+                    else if (val === 'not') tokens.push({ type: 'NOT', value: val, line: lineNum });
+                    else if (val === 'else') tokens.push({ type: 'ELSE', value: val, line: lineNum });
+                    else if (val === 'elif' || val === 'elseif') tokens.push({ type: 'ELIF', value: val, line: lineNum });
+                    else if (val === 'endif') tokens.push({ type: 'ENDIF', value: val, line: lineNum });
+                    else if (val === 'for') tokens.push({ type: 'FOR', value: val, line: lineNum });
+                    else if (val === 'lop') tokens.push({ type: 'LOP', value: val, line: lineNum });
+                    else if (val === 'while') tokens.push({ type: 'WHILE', value: val, line: lineNum });
+                    else if (val === 'endwhile' || val === 'endloop') tokens.push({ type: 'ENDLOOP', value: val, line: lineNum });
+
+                    else if (['function', 'def', 'func', 'fn', 'define', 'named'].includes(val)) tokens.push({ type: 'FUNC_KEYWORD', value: val, line: lineNum });
+                    else if (val === 'and') tokens.push({ type: 'AND_KEYWORD', value: val, line: lineNum });
+                    else if (val === 'return') tokens.push({ type: 'RETURN_KEYWORD', mode: 'one', value: val, line: lineNum });
+                    else if (val === 'end') {
+                        let nextI = i;
+                        while (nextI < source.length && /\s/.test(source[nextI]) && source[nextI] !== '\n') nextI++;
+                        let sub = source.substring(nextI, nextI + 2);
+                        let subL = source.substring(nextI, nextI + 4);
+                        if (sub === 'if') { tokens.push({ type: 'ENDIF', value: 'end if', line: lineNum }); i = nextI + 2; }
+                        else if (subL === 'loop') { tokens.push({ type: 'ENDLOOP', value: 'end loop', line: lineNum }); i = nextI + 4; }
+                        else if (subL === 'while') { tokens.push({ type: 'ENDLOOP', value: 'end while', line: lineNum }); i = nextI + 5; }
+                        else tokens.push({ type: 'IDENTIFIER', value: val, line: lineNum });
+                    }
+                    else tokens.push({ type: 'IDENTIFIER', value: val, line: lineNum });
+                    continue;
+                }
+                if (/[0-9]/.test(ch)) {
+                    let start = i; i++;
+                    while (i < source.length && /[0-9]/.test(source[i])) i++;
+
+                    tokens.push({ type: 'NUMBER', value: parseInt(source.substring(start, i), 10), line: lineNum });
+                    continue;
+                }
+                i++;
+            }
+            return tokens;
+        }
+
+        // --- 1.5 Utility Argument Splitter (Moved Up to Fix Scope Dependencies) ---
+        function splitArgs(tokens) {
+            let args = [], current = [], pCount = 0, bCount = 0, oCount = 0;
+            for (let i = 0; i < tokens.length; i++) {
+                let t = tokens[i];
+                if (t.type === 'LPAREN') pCount++; if (t.type === 'RPAREN') pCount--;
+                if (t.type === 'LBRACKET') bCount++; if (t.type === 'RBRACKET') bCount--;
+                if (t.type === 'LBRACE') oCount++; if (t.type === 'RBRACE') oCount--;
+                if (pCount === 0 && bCount === 0 && oCount === 0) {
+                    if (t.type === 'COMMA' || t.type === 'AND_KEYWORD') {
+                        if (current.length > 0) { args.push(current); current = []; } continue;
+
+                    }
+                    if (current.length > 0) {
+                        let last = current[current.length - 1];
+                        if (['IDENTIFIER', 'NUMBER', 'BOOLEAN', 'STRING', 'RPAREN', 'RBRACKET', 'RBRACE'].includes(last.type) &&
+                            ['IDENTIFIER', 'NUMBER', 'BOOLEAN', 'STRING', 'READVAR', 'LPAREN', 'LBRACKET', 'LBRACE', 'NOT', 'UNDER_ARR', 'SYSTEM'].includes(t.type)) {
+                            args.push(current); current = [];
+                        }
+                    }
+                }
+                current.push(t);
+            }
+            if (current.length > 0) args.push(current); return args;
+        }
+
+        // --- 2. AST Parser ---
+        function parseAST(tokens) {
+            let idx = 0;
+            function peek() { return tokens[idx]; }
+            function next() { return tokens[idx++]; }
+
+
+            function parseStatementsListExtended(closeTypesSet) {
+                const list = [];
+                while (idx < tokens.length) {
+                    let tok = peek(); if (!tok) break;
+                    if ((tok.type === 'RBRACE' || tok.type === 'RBRACKET' || tok.type === 'RPAREN') && (!closeTypesSet || !closeTypesSet.has(tok.type))) {
+                        throw new Error(`[Line ${tok.line}] Syntax Error: Unexpected closing token tag '${tok.value}' found.`);
+                    }
+                    if (tok.type === 'NEWLINE' || tok.type === 'DOT') { next(); continue; }
+                    if (closeTypesSet && closeTypesSet.has(tok.type)) {
+                        if (tok.type === 'IF' && tokens[idx + 1] && tokens[idx + 1].type !== 'NOT') { list.push(parseIfStatement()); continue; }
+                        break;
+                    }
+                    if (tok.type === 'IF' && tokens[idx + 1] && tokens[idx + 1].type === 'NOT') break;
+
+                    if (tok.type === 'FUNC_KEYWORD') list.push(parseFunctionDeclaration());
+                    else if (tok.type === 'IF') list.push(parseIfStatement());
+                    else if (tok.type === 'WHILE') list.push(parseWhileStatement());
+                    else if (['FOR', 'LOP'].includes(tok.type)) list.push(parseForOrLopStatement());
+                    else list.push(parseFlatStatement());
+
+                }
+                return list;
+            }
+
+            function parseFunctionDeclaration() {
+                while (idx < tokens.length && peek().type === 'FUNC_KEYWORD') next();
+                let funcName = next().value; next();
+                let argNames = [];
+                while (idx < tokens.length && peek().type !== 'RPAREN') {
+                    let t = next(); if (t.type === 'IDENTIFIER') argNames.push(t.value);
+                }
+                next();
+                while (peek() && ['NEWLINE', 'DOT'].includes(peek().type)) next();
+                next();
+                let body = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                return { type: 'FUNC_DECL', name: funcName, args: argNames, body: body, line: tokens[idx-1].line };
+            }
+
+            function parseIfStatement() {
+
+                let ifTok = next(), conditionTokens = [], elseIfBlocks = [], elseBlock = null, isBraceStyle = false, lookupIdx = idx;
+                while (lookupIdx < tokens.length) {
+                    let tok = tokens[lookupIdx];
+                    if (tok.type === 'LBRACE') { isBraceStyle = true; break; }
+                    if (tok.type === 'COMMA') { isBraceStyle = false; break; }
+                    if (['IF', 'ENDIF', 'RBRACE', 'ELSE', 'ELIF', 'ENDLOOP'].includes(tok.type)) break;
+                    lookupIdx++;
+                }
+
+                if (isBraceStyle) {
+                    while (idx < tokens.length && peek().type !== 'LBRACE') conditionTokens.push(next());
+                    next(); let mainBody = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                    while (idx < tokens.length) {
+                        while (peek() && ['NEWLINE', 'DOT'].includes(peek().type)) next();
+                        if (peek() && peek().type === 'ELSE') {
+                            next();
+                            while (peek() && ['NEWLINE', 'DOT'].includes(peek().type)) next();
+                            if (peek() && peek().type === 'IF') {
+                                next(); let elifCond = [];
+
+                                while (idx < tokens.length && peek().type !== 'LBRACE') elifCond.push(next());
+                                next(); let elifBody = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                                elseIfBlocks.push({ condition: elifCond, body: elifBody, line: peek() ? peek().line : ifTok.line, isBrace: true });
+                            } else {
+                                next(); elseBlock = parseStatementsListExtended(new Set(['RBRACE'])); next(); break;
+                            }
+                        } else break;
+                    }
+                    return { type: 'IF_STMT', condition: conditionTokens, body: mainBody, elseIfBlocks, elseBlock, isBrace: true, line: ifTok.line };
+                } else {
+                    while (idx < tokens.length && peek().type !== 'COMMA') conditionTokens.push(next());
+                    next(); let closeSet = new Set(['ENDIF', 'ELSE', 'ELIF', 'ELSEIF', 'ENDLOOP']);
+                    let mainBody = parseStatementsListExtended(closeSet);
+                    while (idx < tokens.length) {
+                        let tok = peek(); if (!tok) break;
+                        if (['NEWLINE', 'DOT'].includes(tok.type)) { next(); continue; }
+                        if (tok.type === 'ENDIF') { next(); break; }
+                        if (tok.type === 'ELIF') {
+                            let cl = tok.line; next(); let elifCond = [];
+
+                            while (idx < tokens.length && peek().type !== 'COMMA') elifCond.push(next());
+                            next(); let elifBody = parseStatementsListExtended(closeSet);
+                            elseIfBlocks.push({ condition: elifCond, body: elifBody, line: cl, isBrace: false }); continue;
+                        }
+                        if (tok.type === 'ELSE') {
+                            let cl = tok.line; next();
+                            if (peek() && peek().type === 'IF') {
+                                next(); let elifCond = [];
+                                while (idx < tokens.length && peek().type !== 'COMMA') elifCond.push(next());
+                                next(); let elifBody = parseStatementsListExtended(closeSet);
+                                elseIfBlocks.push({ condition: elifCond, body: elifBody, line: cl, isBrace: false });
+                            } else {
+                                if (peek() && peek().type === 'COMMA') next();
+                                elseBlock = parseStatementsListExtended(new Set(['ENDIF'])); next(); break;
+                            }
+                            continue;
+                        }
+                        break;
+                    }
+
+                    return { type: 'IF_STMT', condition: conditionTokens, body: mainBody, elseIfBlocks, elseBlock, isBrace: false, line: ifTok.line };
+                }
+            }
+
+            function parseWhileStatement() {
+                let startTok = next(), isInverted = false, conditionTokens = [], body = [], isBrace = false;
+                let lookupIdx = idx, foundLBrace = false;
+                while (lookupIdx < tokens.length) {
+                    if (tokens[lookupIdx].type === 'LBRACE') { foundLBrace = true; break; }
+                    if (['NEWLINE', 'COLON'].includes(tokens[lookupIdx].type)) break;
+                    lookupIdx++;
+                }
+                if (peek() && peek().type === 'NOT') { next(); isInverted = true; }
+
+                if (peek() && peek().type === 'LPAREN') {
+                    next(); let pCount = 1; isBrace = true;
+                    while (idx < tokens.length) {
+                        let t = peek(); if (t.type === 'LPAREN') pCount++;
+                        if (t.type === 'RPAREN') { pCount--; if (pCount === 0) { next(); break; } }
+
+                        conditionTokens.push(next());
+                    }
+                    while (peek() && ['NEWLINE', 'DOT'].includes(peek().type)) next();
+                    if (peek() && peek().type === 'LBRACE') next();
+                    body = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                } else if (foundLBrace) {
+                    isBrace = true;
+                    while (idx < tokens.length && peek().type !== 'LBRACE') conditionTokens.push(next());
+                    next(); body = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                } else {
+                    while (idx < tokens.length && peek().type !== 'COLON' && peek().type !== 'NEWLINE') conditionTokens.push(next());
+                    if (peek() && peek().type === 'COLON') next();
+                    body = parseStatementsListExtended(new Set(['ENDLOOP'])); next();
+                }
+                if (isInverted) {
+                    conditionTokens = [{ type: 'NOT', value: '!', line: startTok.line }, { type: 'LPAREN', value: '(', line: startTok.line }].concat(conditionTokens).concat([{ type: 'RPAREN', value: ')', line: startTok.line }]);
+                }
+                return { type: 'WHILE_STMT', condition: conditionTokens, body: body, isBrace: isBrace, line: startTok.line };
+            }
+
+
+            function parseForOrLopStatement() {
+                let startTok = next(), lookupIdx = idx, foundLBrace = false;
+                while (lookupIdx < tokens.length) {
+                    if (tokens[lookupIdx].type === 'LBRACE') { foundLBrace = true; break; }
+                    if (['NEWLINE', 'COLON'].includes(tokens[lookupIdx].type)) break;
+                    lookupIdx++;
+                }
+
+                if (peek() && peek().type === 'LPAREN') {
+                    next(); let innerTokens = [], pCount = 1;
+                    while (idx < tokens.length) {
+                        let t = peek(); if (t.type === 'LPAREN') pCount++;
+                        if (t.type === 'RPAREN') { pCount--; if (pCount === 0) { next(); break; } }
+                        innerTokens.push(next());
+                    }
+                    let groups = [[]];
+                    innerTokens.forEach(t => { if (t.type === 'COMMA') groups.push([]); else groups[groups.length - 1].push(t); });
+                    while (peek() && ['NEWLINE', 'DOT'].includes(peek().type)) next();
+                    if (peek() && peek().type === 'LBRACE') next();
+
+                    let body = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                    if (groups.length === 3) return { type: 'FOR_TRIPLE', initTokens: groups[0], condTokens: groups[1], afterTokens: groups[2], body: body, isBrace: true, line: startTok.line };
+                    return { type: 'LOOP_COUNT', countTokens: groups[0], indexVar: groups[1] ? groups[1][0].value : null, body: body, isBrace: true, line: startTok.line };
+                } else if (foundLBrace) {
+                    let lineTokens = [];
+                    while (idx < tokens.length && peek().type !== 'LBRACE') lineTokens.push(next());
+                    next(); let body = parseStatementsListExtended(new Set(['RBRACE'])); next();
+                    let compIdx = lineTokens.findIndex(t => t.type === 'COMP');
+                    let assignIdx = lineTokens.findLastIndex(t => t.type === 'ASSIGN');
+                    if (compIdx <= 0 || assignIdx <= compIdx) {
+                        return { type: 'LOOP_COUNT', countTokens: [lineTokens[0]], indexVar: lineTokens[1] ? lineTokens[1].value : null, body: body, isBrace: true, line: startTok.line };
+                    }
+                    return { type: 'FOR_TRIPLE', initTokens: lineTokens.slice(0, compIdx - 1), condTokens: lineTokens.slice(compIdx - 1, assignIdx - 1), afterTokens: lineTokens.slice(assignIdx - 1), body: body, isBrace: true, line: startTok.line };
+                } else {
+                    let lineTokens = [];
+                    while (idx < tokens.length && peek().type !== 'NEWLINE' && peek().type !== 'COLON') lineTokens.push(next());
+                    let isColon = peek() && peek().type === 'COLON'; if (isColon) next();
+                    let body = parseStatementsListExtended(new Set(['ENDLOOP'])); next();
+                    if (isColon) {
+
+                        return { type: 'LOOP_COUNT', countTokens: [lineTokens[0]], indexVar: lineTokens[1] ? lineTokens[1].value : null, body: body, isBrace: false, line: startTok.line };
+                    }
+                    let compIdx = lineTokens.findIndex(t => t.type === 'COMP'), assignIdx = lineTokens.findLastIndex(t => t.type === 'ASSIGN');
+                    if (compIdx <= 0 || assignIdx <= compIdx) return { type: 'LOOP_COUNT', countTokens: [lineTokens[0]], indexVar: lineTokens[1] ? lineTokens[1].value : null, body: body, isBrace: false, line: startTok.line };
+                    return { type: 'FOR_TRIPLE', initTokens: lineTokens.slice(0, compIdx - 1), condTokens: lineTokens.slice(compIdx - 1, assignIdx - 1), afterTokens: lineTokens.slice(assignIdx - 1), body: body, isBrace: false, line: startTok.line };
+                }
+            }
+
+            function parseFlatStatement() {
+                let stmtTokens = [], pCount = 0, bCount = 0, oCount = 0;
+                while (idx < tokens.length) {
+                    let t = peek(); if (!t) break;
+                    if (t.type === 'LPAREN') pCount++; if (t.type === 'RPAREN') pCount--;
+                    if (t.type === 'LBRACKET') bCount++; if (t.type === 'RBRACKET') bCount--;
+                    if (t.type === 'LBRACE') oCount++; if (t.type === 'RBRACE') oCount--;
+
+                    if (pCount < 0 || bCount < 0 || oCount < 0) {
+                        if (t.type === 'LPAREN') pCount--; if (t.type === 'RPAREN') pCount++;
+                        if (t.type === 'LBRACKET') bCount--; if (t.type === 'RBRACKET') bCount++;
+
+                        if (t.type === 'LBRACE') oCount--; if (t.type === 'RBRACE') oCount++;
+                        break;
+                    }
+                    if (pCount === 0 && bCount === 0 && oCount === 0) {
+                        if (t.type === 'DOT') { stmtTokens.push(next()); break; }
+                        if (!['RPAREN', 'RBRACKET', 'RBRACE'].includes(t.type)) {
+                            if (t.type === 'NEWLINE') { next(); break; }
+                            if (stmtTokens.length > 0) {
+                                if (['VAR', 'FUNC_KEYWORD', 'IF', 'WHILE', 'FOR', 'LOP', 'RETURN_KEYWORD', 'ENDIF', 'ELSE', 'ELIF', 'ENDLOOP'].includes(t.type)) break;
+                                if (t.type === 'SYSTEM' && ['@out', '@readvar_mode'].includes(t.value)) break;
+                            }
+                        }
+                    }
+                    stmtTokens.push(next());
+                }
+                if (stmtTokens.length === 0) return null;
+                let lineNum = stmtTokens[0].line;
+                if (stmtTokens[0].type === 'RETURN_KEYWORD') return { type: 'RETURN_STMT', mode: stmtTokens[0].mode, tokens: stmtTokens, line: lineNum };
+                if (stmtTokens[0].type === 'SYSTEM' && ['@readvar_mode', '@out', '@dom.create', '@dom.append'].includes(stmtTokens[0].value)) return { type: 'SYS_CALL', tokens: stmtTokens, line: lineNum };
+
+                if (stmtTokens[0].type === 'VAR' && stmtTokens[1] && stmtTokens[1].type === 'CONST') return { type: 'CONST_DECL', tokens: stmtTokens, line: lineNum };
+                if (stmtTokens[0].type === 'VAR') return { type: 'VAR_DECL', tokens: stmtTokens, line: lineNum };
+                if (stmtTokens[0].type === 'IDENTIFIER' && stmtTokens[0].value.includes('.') && stmtTokens[1] && stmtTokens[1].type === 'ASSIGN') return { type: 'OBJ_PROP_ASSIGN', tokens: stmtTokens, line: lineNum };
+                if (stmtTokens[0].type === 'IDENTIFIER' && stmtTokens[1] && stmtTokens[1].type === 'ASSIGN') return { type: 'ASSIGN', tokens: stmtTokens, line: lineNum };
+                return { type: 'EXPR_STMT', tokens: stmtTokens, line: lineNum };
+            }
+
+            return parseStatementsListExtended();
+        }
+
+        // --- 3. Expression Evaluator ---
+        function evalExpr(tokens, localVars, readvarMode, lineNum, functions, callFuncCallback) {
+            let exprTokens = tokens.filter(t => t.type !== 'DOT');
+            while (exprTokens.length > 0 && exprTokens[exprTokens.length - 1].type === 'NEWLINE') exprTokens.pop();
+
+            let arrProcessed = true;
+            while (arrProcessed) {
+                arrProcessed = false;
+                let startIdx = exprTokens.findIndex(t => t.type === 'LBRACKET');
+
+                if (startIdx !== -1) {
+                    let pCount = 1, endIdx = -1;
+                    for (let k = startIdx + 1; k < exprTokens.length; k++) {
+                        if (exprTokens[k].type === 'LBRACKET') pCount++;
+                        if (exprTokens[k].type === 'RBRACKET') { pCount--; if (pCount === 0) { endIdx = k; break; } }
+                    }
+                    if (endIdx !== -1) {
+                        let items = splitArgs(exprTokens.slice(startIdx + 1, endIdx));
+                        let resolved = items.map(item => evalExpr(item, localVars, readvarMode, lineNum, functions, callFuncCallback));
+                        exprTokens.splice(startIdx, endIdx - startIdx + 1, { type: 'ARRAY_LITERAL', value: resolved, line: lineNum });
+                        arrProcessed = true; continue;
+                    }
+                }
+
+                let uStartIdx = exprTokens.findIndex(t => t.type === 'UNDER_ARR');
+                if (uStartIdx !== -1) {
+                    let uEndIdx = exprTokens.findIndex((t, idx) => idx > uStartIdx && t.type === 'UNDER_ARR');
+                    if (uEndIdx !== -1) {
+                        let items = splitArgs(exprTokens.slice(uStartIdx + 1, uEndIdx));
+
+                        let resolved = items.map(item => evalExpr(item, localVars, readvarMode, lineNum, functions, callFuncCallback));
+                        exprTokens.splice(uStartIdx, uEndIdx - uStartIdx + 1, { type: 'ARRAY_LITERAL', value: resolved, line: lineNum });
+                        arrProcessed = true; continue;
+                    }
+                }
+            }
+
+            let i = 0;
+            while (i < exprTokens.length) {
+                if (exprTokens[i].type === 'SYSTEM' && exprTokens[i].value === '@dom.create' && exprTokens[i+1] && exprTokens[i+1].type === 'LPAREN') {
+                    let lookup = i + 2, innerToks = [], pCount = 1;
+                    while (lookup < exprTokens.length) {
+                        if (exprTokens[lookup].type === 'LPAREN') pCount++;
+                        if (exprTokens[lookup].type === 'RPAREN') { pCount--; if (pCount === 0) break; }
+                        innerToks.push(exprTokens[lookup]); lookup++;
+                    }
+                    let tag = evalExpr(innerToks, localVars, readvarMode, lineNum, functions, callFuncCallback);
+                    exprTokens.splice(i, lookup - i + 1, { type: 'OBJECT_LITERAL', value: { isDOM: true, ref: document.createElement(tag) }, line: lineNum });
+                    continue;
+
+                }
+                
+                if (exprTokens[i].type === 'IDENTIFIER' && functions[exprTokens[i].value] && exprTokens[i+1] && exprTokens[i+1].type === 'LPAREN') {
+                    let funcName = exprTokens[i].value, pCount = 1, lookup = i + 2, innerArgTokens = [];
+                    while (lookup < exprTokens.length) {
+                        let t = exprTokens[lookup]; if (t.type === 'LPAREN') pCount++;
+                        if (t.type === 'RPAREN') { pCount--; if (pCount === 0) break; }
+                        innerArgTokens.push(t); lookup++;
+                    }
+                    let splitGroups = splitArgs(innerArgTokens);
+                    let argValues = splitGroups.map(g => g.length === 0 ? undefined : evalExpr(g, localVars, readvarMode, lineNum, functions, callFuncCallback)).filter(v => v !== undefined);
+                    let resVal = callFuncCallback(funcName, argValues, lineNum);
+                    let targetType = (typeof resVal === 'object' && !Array.isArray(resVal) && resVal !== null) ? 'OBJECT_LITERAL' : (Array.isArray(resVal) ? 'ARRAY_LITERAL' : (typeof resVal === 'boolean' ? 'BOOLEAN' : 'NUMBER'));
+                    exprTokens.splice(i, lookup - i + 1, { type: targetType, value: resVal, line: lineNum });
+                    continue;
+                }
+                i++;
+            }
+
+
+            if (exprTokens.length === 1 && exprTokens[0].type === 'OBJECT_LITERAL' && exprTokens[0].value && exprTokens[0].value.isDOM) {
+                return exprTokens[0].value;
+            }
+
+            const likeIdx = exprTokens.findIndex(t => t.type === 'COMP' && t.value === '$=');
+            if (likeIdx !== -1) {
+                return String(evalExpr(exprTokens.slice(0, likeIdx), localVars, readvarMode, lineNum, functions, callFuncCallback)).includes(String(evalExpr(exprTokens.slice(likeIdx + 1), localVars, readvarMode, lineNum, functions, callFuncCallback)));
+            }
+
+            let jsExpr = "";
+            for (let i = 0; i < exprTokens.length; i++) {
+                let tok = exprTokens[i];
+                if (['OBJECT_LITERAL', 'ARRAY_LITERAL'].includes(tok.type)) {
+                    if (tok.value && tok.value.isDOM) return tok.value; 
+                    jsExpr += ` ${JSON.stringify(tok.value)} `;
+                } else if (tok.type === 'READVAR') {
+                    let vn = exprTokens[i + 1].value;
+                    let obj = (vn in localVars) ? localVars[vn] : varValues[vn];
+                    if (obj && obj.isDOM) return obj;
+
+                    jsExpr += ` ${JSON.stringify(obj)} `; i++;
+                } else if (tok.type === 'IDENTIFIER') {
+                    if (readvarMode) throw new Error(`[Line ${lineNum}] Read declared variable '${tok.value}' requires 'readvar' in readvar mode`);
+                    let val = (tok.value in localVars) ? localVars[tok.value] : varValues[tok.value];
+                    if (val === undefined) throw new Error(`[Line ${lineNum}] Program found not defined token '${tok.value}'`);
+                    if (val && val.isDOM) return val;
+                    jsExpr += ` ${JSON.stringify(val)} `;
+                } else if (tok.type === 'STRING') {
+                    jsExpr += ` ${JSON.stringify(tok.value)} `;
+                } else if (['NUMBER', 'BOOLEAN'].includes(tok.type)) jsExpr += ` ${tok.value} `;
+                else if (tok.type === 'PLUS') jsExpr += " + ";
+                else if (tok.type === 'MINUS') jsExpr += " - ";
+                else if (tok.type === 'COMP') jsExpr += ` ${tok.value} `;
+                else if (tok.type === 'NOT') jsExpr += " ! ";
+                else if (tok.type === 'LPAREN') jsExpr += " ( ";
+                else if (tok.type === 'RPAREN') jsExpr += " ) ";
+            }
+            try { return new Function(`return (${jsExpr});`)(); } catch (e) { throw new Error(`[Line ${lineNum}] Expression Error: Failed to evaluate execution sequence.`); }
+        }
+
+
+        let varValues = {}, constVars = new Set(), declaredVars = new Set();
+
+        // --- 4. Core Execution Engine ---
+        function runInterpreter(source) {
+            document.getElementById('app-root').innerHTML = "";
+            let tokens, ast;
+            try { tokens = tokenize(source); } catch (e) { return { success: false, error: e.message }; }
+            try { ast = parseAST(tokens); } catch (e) { return { success: false, error: e.message }; }
+
+            let readvarMode = true; varValues = {}; constVars = new Set(); declaredVars = new Set();
+            const functions = {}, outputs = [];
+
+            function callUserFunction(name, args, lineNum) {
+                let fd = functions[name]; if (!fd) throw new Error(`[Line ${lineNum}] Program found not defined token '${name}'`);
+                let lVars = {}; fd.args.forEach((an, idx) => { lVars[an] = args[idx] !== undefined ? args[idx] : 0; });
+                try { return executeStatements(fd.body, lVars, true, true, 1); }
+                catch (e) { if ([ReturnZeroSignal, ReturnOneSignal, ReturnDescSignal].some(s => e instanceof s)) return e.value; throw e; }
+            }
+
+
+            function executeInlineFlat(flatTokens, localVars, readvarMode, lineNum) {
+                if (!flatTokens || flatTokens.length === 0) return;
+                let tokensToEval = flatTokens.filter(t => t.type !== 'DOT');
+                if (tokensToEval[0].type === 'VAR') {
+                    localVars[tokensToEval[1].value] = evalExpr(tokensToEval.slice(3), localVars, readvarMode, lineNum, functions, callUserFunction);
+                } else if (tokensToEval[0].type === 'IDENTIFIER' && tokensToEval[1] && tokensToEval[1].type === 'ASSIGN') {
+                    let vn = tokensToEval[0].value, val = evalExpr(tokensToEval.slice(2), localVars, readvarMode, lineNum, functions, callUserFunction);
+                    if (vn in localVars) localVars[vn] = val; else varValues[vn] = val;
+                }
+            }
+
+            function formatData(val) {
+                if (val === undefined) return "undefined";
+                if (val && val.isDOM) return `[DOMElement: <${val.ref.tagName.toLowerCase()}>]`;
+                if (Array.isArray(val)) return "[" + val.map(v => formatData(v)).join(",") + "]";
+                if (typeof val === 'object' && val !== null) return "{" + Object.keys(val).map(k => `${k}:${formatData(val[k])}`).join(",") + "}";
+                return val;
+            }
+
+
+            function executeStatements(statements, localVars = {}, isTopLevelOfFunc = false, isInsideFunc = false, scopeDepth = 0) {
+                if (scopeDepth > 15) throw new Error(`[ERR_TOO_MANY_RETURNSZERO_LOOPS] Scope nesting level exceeded the maximum limit of 15.`);
+                let lastValue = 0;
+                for (let stmt of statements) {
+                    if (!stmt) continue;
+                    let ln = stmt.line;
+                    if (stmt.type === 'FUNC_DECL') functions[stmt.name] = { args: stmt.args, body: stmt.body };
+                    else if (stmt.type === 'RETURN_STMT') {
+                        if (!isInsideFunc) throw new Error(`[Line ${ln}] Restriction Error: return statements can only be used inside functions.`);
+                        let et = stmt.tokens.slice(1).filter(t => t.type !== 'DOT');
+                        if (stmt.mode === 'var') {
+                            if (!stmt.tokens[1] || stmt.tokens[1].type !== 'IDENTIFIER') throw new Error(`[Line ${ln}] Syntax Error: @returnsvar requires a identifier.`);
+                            et = [{ type: 'READVAR', value: 'readvar', line: ln }, stmt.tokens[1]];
+                        }
+                        let rv = (et.length > 0) ? evalExpr(et, localVars, readvarMode, ln, functions, callUserFunction) : undefined;
+                        if (stmt.mode === 'zero') throw new ReturnZeroSignal(rv);
+                        if (stmt.mode === 'desc') throw new ReturnDescSignal(rv);
+                        if (isTopLevelOfFunc) throw new ReturnZeroSignal(rv); else throw new ReturnOneSignal(rv);
+                    }
+
+                    else if (stmt.type === 'SYS_CALL') {
+                        let sysName = stmt.tokens[0].value;
+                        let innerContent = stmt.tokens.filter(t => t.type !== 'DOT');
+                        if (sysName === '@readvar_mode') readvarMode = innerContent[1].value === 'true';
+                        else if (sysName === '@out') outputs.push(formatData(evalExpr(innerContent.slice(2), localVars, readvarMode, ln, functions, callUserFunction)));
+                        else {
+                            let argsTokens = splitArgs(innerContent.slice(2, innerContent.length - 1));
+                            let evaluatedArgs = argsTokens.map(t => evalExpr(t, localVars, readvarMode, ln, functions, callUserFunction));
+                            if (sysName === '@dom.append') {
+                                let pId = evaluatedArgs[0], target = evaluatedArgs[1];
+                                if (target && target.isDOM) {
+                                    let container = document.getElementById(pId); if (container) container.appendChild(target.ref);
+                                }
+                            }
+                        }
+                    }
+                    else if (stmt.type === 'OBJ_PROP_ASSIGN') {
+                        let fullKey = stmt.tokens[0].value, dotIdx = fullKey.indexOf('.'), varName = fullKey.substring(0, dotIdx), propName = fullKey.substring(dotIdx + 1);
+                        let targetObj = (varName in localVars) ? localVars[varName] : varValues[varName];
+
+                        if (!targetObj || !targetObj.isDOM) throw new Error(`[Line ${ln}] Property Error: Target variable '${varName}' is not a valid DOM object.`);
+                        let rhsTokens = stmt.tokens.slice(2).filter(t => t.type !== 'DOT');
+                        let rhsValue = evalExpr(rhsTokens, localVars, readvarMode, ln, functions, callUserFunction);
+                        if (propName === 'text') targetObj.ref.textContent = rhsValue;
+                        else if (propName === 'style' && Array.isArray(rhsValue)) targetObj.ref.style[rhsValue[0]] = rhsValue[1];
+                    }
+                    else if (stmt.type === 'CONST_DECL') {
+                        let vn = stmt.tokens[2].value; 
+                        let rhsTokens = stmt.tokens.slice(4).filter(t => t.type !== 'DOT');
+                        varValues[vn] = evalExpr(rhsTokens, localVars, readvarMode, ln, functions, callUserFunction);
+                        declaredVars.add(vn); constVars.add(vn);
+                    }
+                    else if (stmt.type === 'VAR_DECL') {
+                        let vn = stmt.tokens[1].value;
+                        let rhsTokens = stmt.tokens.slice(3).filter(t => t.type !== 'DOT');
+                        let val = evalExpr(rhsTokens, localVars, readvarMode, ln, functions, callUserFunction);
+                        if (isInsideFunc) localVars[vn] = val; else { declaredVars.add(vn); varValues[vn] = val; }
+                    }
+                    else if (stmt.type === 'ASSIGN') {
+
+                        let vn = stmt.tokens[0].value;
+                        let rhsTokens = stmt.tokens.slice(2).filter(t => t.type !== 'DOT');
+                        let val = evalExpr(rhsTokens, localVars, readvarMode, ln, functions, callUserFunction);
+                        if (vn in localVars) localVars[vn] = val;
+                        else if (declaredVars.has(vn)) {
+                            if (constVars.has(vn)) throw new Error(`[Line ${ln}] Runtime Error: Cannot reassign constant variable '${vn}'.`);
+                            varValues[vn] = val;
+                        } else throw new Error(`[Line ${ln}] Program found not defined token '${vn}'`);
+                    }
+                    else if (stmt.type === 'IF_STMT') {
+                        let nd = stmt.isBrace ? scopeDepth + 1 : scopeDepth, executed = false;
+                        if (evalExpr(stmt.condition, localVars, readvarMode, ln, functions, callUserFunction) === true) {
+                            lastValue = executeStatements(stmt.body, localVars, false, isInsideFunc, nd); executed = true;
+                        } else if (stmt.elseIfBlocks) {
+                            for (let eIf of stmt.elseIfBlocks) {
+                                if (evalExpr(eIf.condition, localVars, readvarMode, eIf.line, functions, callUserFunction) === true) {
+                                    lastValue = executeStatements(eIf.body, localVars, false, isInsideFunc, eIf.isBrace ? scopeDepth + 1 : scopeDepth);
+                                    executed = true; break;
+                                }}
+
+                        }
+                        if (!executed && stmt.elseBlock) lastValue = executeStatements(stmt.elseBlock, localVars, false, isInsideFunc, nd);
+                    }
+                    else if (stmt.type === 'WHILE_STMT') {
+                        let sc = 0, nd = stmt.isBrace ? scopeDepth + 1 : scopeDepth;
+                        while (evalExpr(stmt.condition, localVars, readvarMode, ln, functions, callUserFunction) === true) {
+                            if (++sc > 1000) throw new Error(`[Line ${ln}] Runtime Error: Infinite loop safety counter exceeded.`);
+                            lastValue = executeStatements(stmt.body, localVars, false, isInsideFunc, nd);
+                        }
+                    }
+                    else if (stmt.type === 'LOOP_COUNT') {
+                        let count = parseInt(evalExpr(stmt.countTokens, localVars, readvarMode, ln, functions, callFuncCallback), 10);
+                        let iv = stmt.indexVar, nd = stmt.isBrace ? scopeDepth + 1 : scopeDepth;
+                        if (iv) localVars[iv] = 0;
+                        for (let k = 0; k < count; k++) {
+                            if (iv) localVars[iv] = k; lastValue = executeStatements(stmt.body, localVars, false, isInsideFunc, nd);
+                        }
+                    }
+                    else if (stmt.type === 'FOR_TRIPLE') {
+
+                        executeInlineFlat(stmt.initTokens, localVars, readvarMode, ln);
+                        let sc = 0, nd = stmt.isBrace ? scopeDepth + 1 : scopeDepth;
+                        while (evalExpr(stmt.condTokens, localVars, readvarMode, ln, functions, callUserFunction) === true) {
+                            if (++sc > 1000) throw new Error(`[Line ${ln}] Runtime Error: Infinite loop counter exceeded.`);
+                            lastValue = executeStatements(stmt.body, localVars, false, isInsideFunc, nd);
+                            executeInlineFlat(stmt.afterTokens, localVars, readvarMode, ln);
+                        }
+                    }
+                    else if (stmt.type === 'EXPR_STMT') evalExpr(stmt.tokens, localVars, readvarMode, ln, functions, callUserFunction);
+                }
+                return lastValue;
+            }
+            try { executeStatements(ast, {}, false, false, 0); } catch (e) { return { success: false, error: e.message, outputs, variables: varValues, readvarMode }; }
+            return { success: true, outputs, variables: varValues, readvarMode };
+        }
+
+        // --- 5. UI Presentation & Realtime Highlighter ---
+        const editorTextarea = document.getElementById('editor-textarea');
+        const editorHighlight = document.getElementById('editor-highlight');
+
+        const consoleOutput = document.getElementById('console-output');
+        const statusMode = document.getElementById('status-mode');
+        const statusVars = document.getElementById('status-vars');
+
+        function applySyntaxHighlighting() {
+            let code = editorTextarea.value, i = 0, htmlResult = "", braceDepth = 0;
+            let declaredNames = new Set(['myBtn']);
+            let varMatches = code.matchAll(/\b(?:var|const|fn|function|def|func)\s+([a-zA-Z0-9_]+)/g);
+            for (let m of varMatches) { if(m[1]) declaredNames.add(m[1]); }
+
+            while (i < code.length) {
+                let ch = code[i];
+                if (ch === '&') { htmlResult += '&amp;'; i++; continue; }
+                if (ch === '<') { htmlResult += '&lt;'; i++; continue; }
+                if (ch === '>') { htmlResult += '&gt;'; i++; continue; }
+                if (ch === ';') {
+                    let commentStr = "";
+                    while (i < code.length && code[i] !== '\n') {
+                        let cc = code[i]; if (cc === '&') commentStr += '&amp;'; else if (cc === '<') commentStr += '&lt;'; else if (cc === '>') commentStr += '&gt;'; else commentStr += cc;
+
+                        i++;
+                    }
+                    htmlResult += `<span class="hl-comment">${commentStr}</span>`; continue;
+                }
+                if (ch === '"' || ch === "'") {
+                    let q = ch, strLit = q; i++;
+                    while (i < code.length && code[i] !== q) { strLit += code[i]; i++; }
+                    if (i < code.length) { strLit += q; i++; }
+                    htmlResult += `<span class="hl-literal">${strLit}</span>`; continue;
+                }
+                if (ch === '@') {
+                    let sysStr = "@"; i++;
+                    while (i < code.length && /[a-zA-Z0-9_.]/.test(code[i])) { sysStr += code[i]; i++; }
+                    htmlResult += `<span class="hl-system">${sysStr}</span>`; continue;
+                }
+                if (['=', '+', '-', '!', '$', ':', '.'].includes(ch)) {
+                    htmlResult += `<span class="hl-operator">${ch}</span>`; i++; continue;
+                }
+                if (ch === '{') {
+
+                    let dClass = `brace-depth-${braceDepth % 4}`; htmlResult += `<span class="${dClass}">{</span>`; braceDepth++; i++; continue;
+                }
+                if (ch === '}') {
+                    braceDepth = Math.max(0, braceDepth - 1); let dClass = `brace-depth-${braceDepth % 4}`; htmlResult += `<span class="${dClass}">}</span>`; i++; continue;
+                }
+                if (['(', ')', '[', ']', ','].includes(ch)) {
+                    htmlResult += `<span class="hl-braces">${ch}</span>`; i++; continue;
+                }
+                if (/[0-9]/.test(ch)) {
+                    let numStr = ""; while (i < code.length && /[0-9]/.test(code[i])) { numStr += code[i]; i++; }
+                    htmlResult += `<span class="hl-literal">${numStr}</span>`; continue;
+                }
+                if (/[a-zA-Z]/.test(ch)) {
+                    let wordStr = ""; while (i < code.length && /[a-zA-Z0-9_.]/.test(code[i])) { wordStr += code[i]; i++; }
+                    const keywords = ['var', 'const', 'if', 'not', 'else', 'elif', 'elseif', 'endif', 'for', 'lop', 'while', 'endwhile', 'endloop', 'return'];
+                    const literals = ['true', 'false']; const builtins = ['readvar'];
+                    const funcKeywords = ['function', 'def', 'func', 'fn', 'define', 'named', 'and', 'end'];
+                    let baseWord = wordStr.split('.')[0];
+                    if (keywords.includes(wordStr) || funcKeywords.includes(wordStr)) {
+
+                        htmlResult += `<span class="hl-keyword">${wordStr}</span>`;
+                    } else if (literals.includes(wordStr)) {
+                        htmlResult += `<span class="hl-literal">${wordStr}</span>`;
+                    } else if (builtins.includes(wordStr)) {
+                        htmlResult += `<span class="hl-builtin">${wordStr}</span>`;
+                    } else if (declaredNames.has(baseWord)) {
+                        let dotParts = wordStr.split('.');
+                        htmlResult += `<span class="hl-defined-var">${dotParts[0]}</span>`;
+                        if(dotParts[1]) htmlResult += `<span class="hl-operator">.</span><span class="hl-ident">${dotParts[1]}</span>`;
+                    } else {
+                        htmlResult += `<span class="hl-ident">${wordStr}</span>`;
+                    }
+                    continue;
+                }
+                htmlResult += ch; i++;
+            }
+            editorHighlight.innerHTML = htmlResult;
+        }
+
+
+        editorTextarea.addEventListener('input', applySyntaxHighlighting);
+        editorTextarea.addEventListener('scroll', () => {
+            editorHighlight.scrollTop = editorTextarea.scrollTop; editorHighlight.scrollLeft = editorTextarea.scrollLeft;
+        });
+
+        function runCode() {
+            consoleOutput.textContent = "Running...";
+            consoleOutput.className = "flex-1 bg-black p-3 rounded border border-gray-800 code-font text-sm text-white overflow-y-auto whitespace-pre-wrap shadow-inner";
+            const res = runInterpreter(editorTextarea.value);
+
+            if (res.variables) {
+                statusMode.textContent = res.readvarMode ? "true" : "false";
+                statusVars.innerHTML = "";
+                Object.keys(res.variables).forEach(k => {
+                    const div = document.createElement('div'); div.className = "flex justify-between border-b border-gray-800 pb-1";
+                    let v = res.variables[k];
+                    let displayVal = (v && v.isDOM) ? `<span class="text-green-400">&lt;${v.ref.tagName.toLowerCase()}&gt;</span>` : JSON.stringify(v);
+                    div.innerHTML = `<span class="text-blue-400">${k}</span><span class="text-gray-300">${displayVal}</span>`;
+                    statusVars.appendChild(div);
+
+                });
+            }
+            if (res.success) {
+                consoleOutput.textContent = res.outputs.length === 0 ? "(Completed with no output)" : res.outputs.join('\n');
+            } else {
+                const prev = res.outputs && res.outputs.length > 0 ? res.outputs.join('\n') + '\n' : "";
+                consoleOutput.textContent = `${prev}❌ Execution Error:\n${res.error}`;
+                consoleOutput.className = "flex-1 bg-red-950 p-3 rounded border border-red-800 code-font text-sm text-red-200 overflow-y-auto whitespace-pre-wrap shadow-inner";
+            }
+        }
+
+        document.getElementById('btn-run').addEventListener('click', runCode);
+        document.getElementById('btn-clear').addEventListener('click', () => { 
+            editorTextarea.value = ""; applySyntaxHighlighting(); consoleOutput.textContent = "Cleared."; 
+        });
+        
+        applySyntaxHighlighting();
+        runCode();
+    </script>
+</body>
+</html>
+
+
