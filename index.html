@@ -9,7 +9,6 @@
         body { font-family: 'Courier New', Courier, monospace; }
         .code-font { font-family: 'Consolas', 'Monaco', monospace; }
         
-        /* エディタ重ね合わせスタイル */
         .editor-container { position: relative; width: 100%; height: 100%; min-h-[300px]; }
         .editor-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -26,23 +25,21 @@
         }
         #editor-highlight { background: #111827; z-index: 5; pointer-events: none; }
         
-        /* ユーザー指定に基づく美しいカスタム配色テーマ */
-        .hl-comment { color: #6a9955; font-style: italic; }     /* セミコロンコメント: 優しい緑 */
-        .hl-keyword { color: #4ba3e3; font-weight: bold; }     /* var, fn, while等: パステルブルー */
-        .hl-system { color: #ee6666; font-weight: bold; }      /* @dom, @out等: 朱赤 */
-        .hl-literal { color: #a7f3d0; }                        /* true, false, 数値, 文字列: 淡いミント */
-        .hl-builtin { color: #c0a9df; }                        /* readvar等: スモーキーパープル */
-        .hl-operator { color: #ffffff; font-weight: bold; }    /* 演算子・記号: 白 */
-        .hl-braces { color: #d4d4d8; }                         /* カッコ類・カンマ: 薄灰 */
-        .hl-ident { color: #e5e7eb; }                          /* 通常の識別子: オフホワイト */
-        .hl-defined-var { color: #fef08a; font-weight: 500; }  /* 定義済み変数名: クリーム色 */
+        .hl-comment { color: #6a9955; font-style: italic; }   
+        .hl-keyword { color: #4ba3e3; font-weight: bold; }    
+        .hl-system { color: #ee6666; font-weight: bold; }     
+        .hl-literal { color: #a7f3d0; }                      
+        .hl-builtin { color: #c0a9df; }                      
+        .hl-operator { color: #ffffff; font-weight: bold; }   
+        .hl-braces { color: #d4d4d8; }                       
+        .hl-ident { color: #e5e7eb; }                          
+        .hl-defined-var { color: #fef08a; font-weight: 500; } 
 
 
-        /* 波括弧のネスト階層別レインボーカラー */
-        .brace-depth-0 { color: #f472b6; font-weight: bold; }  /* 1層目: パステルピンク */
-        .brace-depth-1 { color: #fbbf24; font-weight: bold; }  /* 2層目: パステルイエロー */
-        .brace-depth-2 { color: #22d3ee; font-weight: bold; }  /* 3層目: パステルシアン */
-        .brace-depth-3 { color: #c084fc; font-weight: bold; }  /* 4層目: パステルパープル */
+        .brace-depth-0 { color: #f472b6; font-weight: bold; } 
+        .brace-depth-1 { color: #fbbf24; font-weight: bold; }
+        .brace-depth-2 { color: #22d3ee; font-weight: bold; }
+        .brace-depth-3 { color: #c084fc; font-weight: bold; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
@@ -50,7 +47,7 @@
     <!-- Header -->
     <header class="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-3">
-            <span class="text-xl font-bold text-gray-200">⚡ EFurokuScript</span>
+            <span class="text-xl font-bold text-gray-200">⚡ EF69Script</span>
             <span class="bg-gray-700 text-gray-400 text-xs px-2 py-1 rounded font-mono">JS-style @dom Object Spec (.efs69)</span>
         </div>
         <div class="flex space-x-2">
